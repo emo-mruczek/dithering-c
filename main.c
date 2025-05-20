@@ -16,24 +16,25 @@ static int color_type;
 static png_bytep* row_pointers;
 
 void read_png(char const* const filename);
-void transform_png();
+void transform_png(uint8_t const factor);
 void write_png(char const* const filename);
 
 int main(int argc, char** argv) {
 
-    if (argc < 3) {
-        fprintf(stdout, "provide a png file and output name you dumass!\n");
+    if (argc < 4) {
+        fprintf(stdout, "provide a png file and output name and scale factor you dumass!\n");
         exit(EXIT_FAILURE);
     }
 
     read_png(argv[1]);
-    transform_png();
+    transform_png(strtol(argv[3], NULL, 10));
     write_png(argv[2]);
 
     return EXIT_SUCCESS;
 }
 
 void read_png(char const* const filename) {
+
     FILE *fp = fopen(filename, "r"); // add "b" if windows but WINDOWS SUCKS SO NO!!!
     
     if (!fp) {
@@ -81,7 +82,7 @@ void read_png(char const* const filename) {
 
     if (setjmp(png_jmpbuf(png_ptr))) {
         fprintf(stdout, "jumping from libpng, caused by an error!\n"); 
-        png_destroy_read_struct(&png_ptr, &png_info_ptr, NULL); // TODO: set the last one
+        png_destroy_read_struct(&png_ptr, &png_info_ptr, NULL);    
         fclose(fp);
         exit(EXIT_FAILURE);
     }
@@ -112,14 +113,13 @@ void read_png(char const* const filename) {
     fclose(fp);
 }
 
-void transform_png() {
+void transform_png(uint8_t const factor) {
 
-     /* TODO: modifications */
-
-    /* easy way for now */
+    /* TODO: modifications */
 
     /* png_set_quantize? FOR N00BS! */
 
+    printf("\n%d\n", factor);
     for(int y = 0; y < height; y++) {
         png_bytep row = row_pointers[y];
         for(int x = 0; x < width; x++) {
@@ -129,15 +129,14 @@ void transform_png() {
             unsigned char* green = &px[1];
             unsigned char* blue = &px[2];
 
-            *red = (unsigned char)round((double)*red / 255) * 255;
-            *green = (unsigned char)round((double)*green / 255) * 255;
-            *blue = (unsigned char)round((double)*blue / 255) * 255;
+            *red = (unsigned char)(round((double)(*red * factor) / 255.0) * (255.0/(double)factor));
+            *green = (unsigned char)(round((double)(*green * factor) / 255.0) * (255.0/(double)factor));
+            *blue = (unsigned char)(round((double)(*blue * factor) / 255.0) * (255.0/(double)factor));
         }
     }
 }
 
 void write_png(char const* const filename) {
-    /* write */
 
     FILE *fp = fopen(filename, "w");
     if (!fp) {
