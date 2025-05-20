@@ -1,5 +1,6 @@
 /* dithering, an easy way */
 
+#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -112,16 +113,27 @@ void read_png(char const* const filename) {
 }
 
 void transform_png() {
+
      /* TODO: modifications */
 
-    for(int y = 0; y < height; y += 1) {
+    /* easy way for now */
+
+    /* png_set_quantize? FOR N00BS! */
+
+    for(int y = 0; y < height; y++) {
         png_bytep row = row_pointers[y];
-        for(int x = 0; x < width; x += 1) {
+        for(int x = 0; x < width; x++) {
             png_bytep px = &(row[x * 4]);
-            // printf(" %3d, %3d = RGBA(%3d, %3d, %3d, %3d)\n", x, y, px[0], px[1], px[2], px[3]);
+
+            unsigned char* red = &px[0];
+            unsigned char* green = &px[1];
+            unsigned char* blue = &px[2];
+
+            *red = (unsigned char)round((double)*red / 255) * 255;
+            *green = (unsigned char)round((double)*green / 255) * 255;
+            *blue = (unsigned char)round((double)*blue / 255) * 255;
         }
     }
-
 }
 
 void write_png(char const* const filename) {
