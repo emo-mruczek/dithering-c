@@ -10,5 +10,6 @@ pkgs.mkShell {
             just
             pkgconf
             valgrind
+            imagemagick
          ];
 }

@@ -14,9 +14,10 @@ static png_uint_32 width;
 static int bit_depth;
 static int color_type;
 static png_bytep* row_pointers;
+static int8_t factor;
 
 void read_png(char const* const filename);
-void transform_png(uint8_t const factor);
+void transform_png();
 void write_png(char const* const filename);
 
 int main(int argc, char** argv) {
@@ -25,9 +26,11 @@ int main(int argc, char** argv) {
         fprintf(stdout, "provide a png file and output name and scale factor you dumass!\n");
         exit(EXIT_FAILURE);
     }
+    
+    factor = strtol(argv[3], NULL, 10);
 
     read_png(argv[1]);
-    transform_png(strtol(argv[3], NULL, 10));
+    transform_png(NULL, 10);
     write_png(argv[2]);
 
     return EXIT_SUCCESS;
@@ -113,25 +116,73 @@ void read_png(char const* const filename) {
     fclose(fp);
 }
 
-void transform_png(uint8_t const factor) {
+const uint8_t quantize(uint16_t const factor, uint16_t colour) {
+    return (uint8_t)(round((double)(colour * factor) / 255.0) * (255.0/(double)factor));
+}
+
+const uint8_t apply_error(int16_t const error, uint16_t const colour, uint16_t const scale) {
+    uint16_t res = colour + error * scale / 16;
+   // printf(" %d ", res);
+    //if (res > 255) res = quantize(factor, res);
+    if (res > 255) res = round(res / 255.0);
+   // printf(" %d \n", res);
+    return res;
+}
+
+void prop_error(png_bytep colour, int8_t errors[3],  uint8_t const scale) {
+    colour[0] = apply_error(errors[0], colour[0], scale);
+    colour[1] = apply_error(errors[1], colour[1], scale);
+    colour[2] = apply_error(errors[2], colour[2], scale);
+}
+
+void transform_png() {
 
     /* TODO: modifications */
 
+    /* TODO: change everyting to uint8_t or sth */
+
     /* png_set_quantize? FOR N00BS! */
 
-    printf("\n%d\n", factor);
-    for(int y = 0; y < height; y++) {
+    for(int y = 0; y < height - 1; y++) {
         png_bytep row = row_pointers[y];
-        for(int x = 0; x < width; x++) {
+
+        for(int x = 1; x < width - 1; x++) {
             png_bytep px = &(row[x * 4]);
 
-            unsigned char* red = &px[0];
-            unsigned char* green = &px[1];
-            unsigned char* blue = &px[2];
+            unsigned char red = px[0];
+            unsigned char green = px[1];
+            unsigned char blue = px[2];
 
-            *red = (unsigned char)(round((double)(*red * factor) / 255.0) * (255.0/(double)factor));
-            *green = (unsigned char)(round((double)(*green * factor) / 255.0) * (255.0/(double)factor));
-            *blue = (unsigned char)(round((double)(*blue * factor) / 255.0) * (255.0/(double)factor));
+            /* quantize */
+
+            red = quantize(factor, red); 
+            green = quantize(factor, green);
+            blue = quantize(factor, blue);
+
+            /* errors */
+
+            int8_t errors[3] = {
+                px[0] - red,
+                px[1] - green,
+                px[2] - blue
+            };
+            
+            px[0] = red;
+            px[1] = green;
+            px[2] = blue;
+
+            png_bytep px_r = &(row[(x+1) * 4]);
+            prop_error(px_r, errors, 7);
+        
+            png_bytep new_row = row_pointers[y+1];
+            png_bytep px_lb = &(new_row[(x-1) * 4]);
+            prop_error(px_lb, errors, 3);
+
+            png_bytep px_b = &(new_row[x * 4]);
+            prop_error(px_b, errors, 5);
+
+            png_bytep px_rb = &(new_row[(x+1) * 4]);
+            prop_error(px_rb, errors, 1);
         }
     }
 }
