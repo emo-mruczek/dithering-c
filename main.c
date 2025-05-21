@@ -1,5 +1,3 @@
-/* dithering, an easy way */
-
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -116,16 +114,13 @@ void read_png(char const* const filename) {
     fclose(fp);
 }
 
-const uint8_t quantize(uint16_t const factor, uint16_t colour) {
+const uint8_t quantize(uint8_t const factor, uint8_t colour) {
     return (uint8_t)(round((double)(colour * factor) / 255.0) * (255.0/(double)factor));
 }
 
 const uint8_t apply_error(int16_t const error, uint16_t const colour, uint16_t const scale) {
     uint16_t res = colour + error * scale / 16;
-   // printf(" %d ", res);
-    //if (res > 255) res = quantize(factor, res);
     if (res > 255) res = round(res / 255.0);
-   // printf(" %d \n", res);
     return res;
 }
 
@@ -136,10 +131,6 @@ void prop_error(png_bytep colour, int8_t errors[3],  uint8_t const scale) {
 }
 
 void transform_png() {
-
-    /* TODO: modifications */
-
-    /* TODO: change everyting to uint8_t or sth */
 
     /* png_set_quantize? FOR N00BS! */
 
@@ -215,8 +206,6 @@ void write_png(char const* const filename) {
     }
 
     png_init_io(png_ptr, fp);
-
-    /* TODO: do stuff with info, stolen from the internet */
 
     png_set_IHDR(
         png_ptr,

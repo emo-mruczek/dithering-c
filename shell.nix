@@ -8,7 +8,7 @@ pkgs.mkShell {
             gdb
             libgcc
             just
-            pkgconf
+            pkg-config
             valgrind
             imagemagick
          ];
